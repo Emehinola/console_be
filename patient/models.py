@@ -1,6 +1,8 @@
 from django.db import models
 from django.core.exceptions import ValidationError
 
+from console_be.settings import HOST
+
 
 def validate_age(age):
     if(int(age) < 18):
@@ -13,6 +15,7 @@ class Patient(models.Model):
     middle_name = models.CharField(max_length=50)
     phone = models.CharField(max_length=15)
     email = models.EmailField()
+    image = models.ImageField(upload_to='patient-images', blank=True)
     group_type = models.CharField(max_length=50)
     blood_group = models.CharField(max_length=5)
     genotype = models.CharField(max_length=5)
@@ -32,8 +35,17 @@ class Patient(models.Model):
         verbose_name_plural = 'Patients'
 
     @property # treats method as property
-    def get_full_name(self):
+    def full_name(self):
         return f"{self.first_name} {self.middle_name}, {self.last_name}"
+    
+    @property
+    def image_url(self):
+    
+        try:
+            return HOST + '/' + str(self.image)
+        
+        except:
+            return ""
         
     def save(self, *args, **kwargs):
         if(Patient.objects.filter(email=self.email).exists()):

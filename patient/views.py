@@ -1,7 +1,9 @@
 from django.shortcuts import render
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, parser_classes
 from rest_framework import status
 from rest_framework.response import Response
+from rest_framework.parsers import MultiPartParser
+from console_be.settings import HOST
 
 from patient.api.serializers import PatientRegistrationSerializer
 from patient.models import Patient
@@ -11,23 +13,32 @@ default_response: dict = {'statusCode': status.HTTP_400_BAD_REQUEST, 'message': 
 
 # Create your views here.
 @api_view(['POST'])
+@parser_classes([MultiPartParser])
 def register_patient(request):
+
     if(request.method != 'POST'): return #
-    response: dict = {}
+    
+    response: dict = default_response
+    data = request.data
+    data['image'] = request.FILES.get('image')
 
     serializer = PatientRegistrationSerializer(data=request.data)
 
-    if(serializer.is_valid()):
-        serializer.save()
+    try:
+        if(serializer.is_valid()):
+            serializer.save()
 
-        response['statusCode'] = status.HTTP_201_CREATED
-        response['message'] = 'Patient registration successful'
-        response['data'] = serializer.data
+            response['statusCode'] = status.HTTP_201_CREATED
+            response['message'] = 'Patient registration successful'
+            response['data'] = serializer.data
     
-    else:
-        response['statusCode'] = status.HTTP_400_BAD_REQUEST
-        response['message'] = 'Patient registration failed'
-        response['errors'] = serializer.errors
+        else:
+            response['statusCode'] = status.HTTP_400_BAD_REQUEST
+            response['message'] = 'Patient registration failed'
+            response['errors'] = serializer.errors
+    
+    except Exception as error:
+        response['errors'] = str(error)
 
     return Response(data=response, status=response['statusCode'])
 

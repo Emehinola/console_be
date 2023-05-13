@@ -147,3 +147,5 @@ SIMPLE_JWT = {
 }
 
 AUTH_USER_MODEL = 'account.ConsoleUser'
+
+# MEDIA_URL = '/media/'
