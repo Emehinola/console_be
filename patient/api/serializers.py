@@ -7,7 +7,8 @@ class PatientRegistrationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Patient
-        exclude = ['image']
+        fields = '__all__'
+        # exclude = ['image']
 
     def get_image_url(self, instance):
         return instance.image_url # return image url

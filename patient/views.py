@@ -3,10 +3,14 @@ from rest_framework.decorators import api_view, parser_classes
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser
-from console_be.settings import HOST
+from rest_framework.pagination import InvalidPage
 
+from api.custom_pagination import CustomPagination
+
+from console_be.settings import HOST
 from patient.api.serializers import PatientRegistrationSerializer
 from patient.models import Patient
+
 
 default_response: dict = {'statusCode': status.HTTP_400_BAD_REQUEST, 'message': None, 'data': None}
 
@@ -45,23 +49,30 @@ def register_patient(request):
 
 @api_view(['GET'])
 def get_patients(request):
+
     if(request.method != 'GET'): return #
+
+    paginator = CustomPagination()
     
     response: dict = {'statusCode': status.HTTP_400_BAD_REQUEST, 'data': []}
     patients = Patient.objects.all()
 
     try:
-        serializer = PatientRegistrationSerializer(patients, many=True)
+        paginated_patients = paginator.paginate_queryset(patients, request=request)
+
+        serializer = PatientRegistrationSerializer(paginated_patients, many=True)
         response['statusCode'] = status.HTTP_200_OK
         response['data'] = serializer.data
+
     except:
         pass
 
-    return Response(response, status=response['statusCode'])
+    return paginator.get_paginated_response(response, statusCode=response['statusCode'])
 
 
 @api_view(['GET'])
 def get_patient_by_email(request):
+    
     if(request.method != 'GET'): return #
 
     response: dict = {'statusCode': status.HTTP_404_NOT_FOUND, 'message': 'Not patient found', 'data': None}
