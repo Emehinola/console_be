@@ -54,8 +54,8 @@ def login_request(request):
     data['statusCode'] = response.status_code
     if(response.status_code == 200):
         data['message'] = 'Login successful!'
-        data['bearer'] = response.json()['access']
-        data['refresh'] = response.json()['refresh']
+        data['accessToken'] = response.json()['access']
+        data['refreshTken'] = response.json()['refresh']
     else:
         data['message'] = 'Incorrect username or password'
 
