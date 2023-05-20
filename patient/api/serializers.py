@@ -1,5 +1,10 @@
 from rest_framework import serializers
-from patient.models import Patient
+from patient.models import Patient, PatientSchedule
+from patient.api.helper import isLessThan, isEqual
+
+import datetime
+
+
 
 class PatientRegistrationSerializer(serializers.ModelSerializer):
     image_url = serializers.SerializerMethodField()
@@ -23,3 +28,29 @@ class PatientRegistrationSerializer(serializers.ModelSerializer):
         
         else:
             return email
+        
+
+class PatientScheduleSerializer(serializers.ModelSerializer):
+    patient = PatientRegistrationSerializer()
+
+    class Meta:
+        model = PatientSchedule
+        fields = '__all__'
+
+
+    def validate_appointment_date(self, data):
+        today: datetime.date = datetime.date.today()
+
+        if (isLessThan(data, today) or isEqual(data, today)):
+            raise serializers.ValidationError("Appointment date must be greater than today's date")
+        
+        else:
+            return data
+        
+
+    def is_valid(self, *, raise_exception=False):
+        return super().is_valid(raise_exception=raise_exception)
+        
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)

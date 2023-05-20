@@ -8,8 +8,8 @@ from api.custom_pagination import CustomPagination
 from api.response_manager import StandardResponseManager
 
 from console_be.settings import HOST
-from patient.api.serializers import PatientRegistrationSerializer
-from patient.models import Patient
+from patient.api.serializers import PatientRegistrationSerializer, PatientScheduleSerializer
+from patient.models import Patient, PatientSchedule
 
 
 default_response: dict = {'statusCode': status.HTTP_400_BAD_REQUEST, 'message': None, 'data': None}
@@ -147,5 +147,102 @@ def delete_patient(request):
     except Patient.DoesNotExist:
         response.statusCode = status.HTTP_404_NOT_FOUND
         response.message = 'Patient not found'
+
+    return Response(response.get_response(), status=response.statusCode)
+
+
+""" PATIENT SCHEDULES VIEWS """
+
+@api_view(['POST'])
+def create_appointment(request):
+    if(request.method != 'POST'): return #
+
+    response: StandardResponseManager = StandardResponseManager()
+    patient: Patient = None
+
+    try:
+        patient = Patient.objects.get(email=request.data['patient_email'])
+
+        request.data['patient'] = patient.id
+        serializer = PatientScheduleSerializer(data=request.data)
+
+        if(serializer.is_valid()):
+            serializer.save()
+
+            response.statusCode = status.HTTP_201_CREATED
+            response.message = "Appointment created successfully"
+            
+        else:
+            response.statusCode = status.HTTP_400_BAD_REQUEST
+            response.errors = serializer.errors
+            response.message = "Failed to create appointment"
+
+    except Patient.DoesNotExist:
+        response.errors = "Patient with this email does not exist"
+        response.message = response.errors
+
+    except Exception as e:
+        response.errors = str(e)
+        response.message = response.errors
+    
+
+    return Response(response.get_response(), status=response.statusCode)
+
+    
+
+
+@api_view(['GET'])
+def get_appointments(request):
+    if(request.method != 'GET'): return #
+
+    response: StandardResponseManager = StandardResponseManager()
+    patients = []
+
+    try:
+        patients = PatientSchedule.objects.all()
+        serializer = PatientScheduleSerializer(patients, many=True)
+
+        response.data = serializer.data
+        response.message = "Patient schedules fetched successfully"
+        response.statusCode = status.HTTP_200_OK
+
+    except:
+        response.errors = "Unable to fetch schedules"
+        response.message = "Unable to fetch schedules"
+
+    return Response(response.get_response(), status=response.statusCode)
+
+
+
+@api_view(['GET'])
+def get_patient_appointment(request):
+    if(request.method != 'GET'): return #
+
+    response: StandardResponseManager = StandardResponseManager()
+    schedule: PatientSchedule = None
+    patient: Patient = None
+
+    try:
+        patient = Patient.objects.get(email=request.data['email'])
+        schedule = PatientSchedule.objects.get(patient=patient)
+        serializer = PatientScheduleSerializer(schedule)
+
+        response.data = serializer.data
+        response.message = "Patient schedule fetched successfully"
+        response.statusCode = status.HTTP_200_OK
+
+    except PatientSchedule.DoesNotExist:
+        response.errors = "Schedule not found"
+        response.message = "Schedule not found"
+        response.statusCode = status.HTTP_404_NOT_FOUND
+
+    except Patient.DoesNotExist:
+        response.errors = "Patient not found"
+        response.message = "Patient not found"
+        response.statusCode = status.HTTP_404_NOT_FOUND
+
+    except:
+        response.errors = "Unable to fetch schedule"
+        response.message = "Unable to fetch schedule"
 
     return Response(response.get_response(), status=response.statusCode)

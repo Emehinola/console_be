@@ -53,3 +53,20 @@ class Patient(models.Model):
 
         super().save(*args, **kwargs)
         
+
+
+# patient scheduling
+class PatientSchedule(models.Model):
+
+    patient = models.ForeignKey(Patient, related_name='patient', on_delete=models.CASCADE)
+    case = models.CharField(max_length=200)
+    appointment_date = models.DateTimeField(blank=False)
+    create_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.patient.full_name
+    
+    class Meta:
+        verbose_name_plural = 'Patient schedules'
+
+    
