@@ -1,12 +1,13 @@
 from rest_framework import serializers
 from patient.models import Patient, PatientSchedule
 from patient.api.helper import isLessThan, isEqual
+from api.custom_exception import CustomException
 
 import datetime
 
 
 
-class PatientRegistrationSerializer(serializers.ModelSerializer):
+class PatientSerializer(serializers.ModelSerializer):
     image_url = serializers.SerializerMethodField()
     full_name = serializers.SerializerMethodField()
 
@@ -31,7 +32,8 @@ class PatientRegistrationSerializer(serializers.ModelSerializer):
         
 
 class PatientScheduleSerializer(serializers.ModelSerializer):
-    patient = PatientRegistrationSerializer()
+    patient = PatientSerializer(read_only=True, many=False)
+
 
     class Meta:
         model = PatientSchedule
@@ -47,9 +49,29 @@ class PatientScheduleSerializer(serializers.ModelSerializer):
         else:
             return data
         
+    
+    def validate(self, validated_data):
 
-    def is_valid(self, *, raise_exception=False):
+        try:
+
+            schedule_exists: bool = PatientSchedule.objects.filter(patient=validated_data['patient']).exists()
+            is_future_date_or_today: bool = not isLessThan(validated_data['appointment_date'], datetime.date.today()) and not isEqual(validated_data['appointment_date'], datetime.date.today())
+
+            if schedule_exists & is_future_date_or_today:
+                raise CustomException(detail="This patient currently has a pending appointment")
+        
+        except Exception as e:
+            raise CustomException(str(e))
+
+        return validated_data
+        
+
+    def is_valid(self, *, patient: Patient = None, raise_exception=False):
         return super().is_valid(raise_exception=raise_exception)
+    
+
+    def create(self, validated_data):
+        return super().create(validated_data)
         
 
     def save(self, *args, **kwargs):

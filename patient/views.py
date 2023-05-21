@@ -8,7 +8,7 @@ from api.custom_pagination import CustomPagination
 from api.response_manager import StandardResponseManager
 
 from console_be.settings import HOST
-from patient.api.serializers import PatientRegistrationSerializer, PatientScheduleSerializer
+from patient.api.serializers import PatientSerializer, PatientScheduleSerializer
 from patient.models import Patient, PatientSchedule
 
 
@@ -27,7 +27,7 @@ def register_patient(request):
     data = request.data
     data['image'] = request.FILES.get('image')
 
-    serializer = PatientRegistrationSerializer(data=request.data)
+    serializer = PatientSerializer(data=request.data)
 
     try:
         if(serializer.is_valid()):
@@ -60,7 +60,7 @@ def get_patients(request):
     try:
         paginated_patients = paginator.paginate_queryset(patients, request=request)
 
-        serializer = PatientRegistrationSerializer(paginated_patients, many=True)
+        serializer = PatientSerializer(paginated_patients, many=True)
         response['statusCode'] = status.HTTP_200_OK
         response['data'] = serializer.data
 
@@ -80,7 +80,7 @@ def get_patient_by_email(request):
 
     try:
         patient = Patient.objects.get(email=request.GET.get('email'))
-        serializer = PatientRegistrationSerializer(patient)
+        serializer = PatientSerializer(patient)
 
         response['statusCode'] = status.HTTP_200_OK
         response['message'] = 'Patient found'
@@ -102,7 +102,7 @@ def update_patient(request):
     try:
         patient = Patient.objects.get(email=request.data.get('email'))
 
-        serializer = PatientRegistrationSerializer(patient, data=request.data)
+        serializer = PatientSerializer(patient, data=request.data)
 
         if(serializer.is_valid()):
             serializer.save()
@@ -147,6 +147,7 @@ def delete_patient(request):
     except Patient.DoesNotExist:
         response.statusCode = status.HTTP_404_NOT_FOUND
         response.message = 'Patient not found'
+        response.errors = response.message
 
     return Response(response.get_response(), status=response.statusCode)
 
@@ -157,7 +158,7 @@ def delete_patient(request):
 def create_appointment(request):
     if(request.method != 'POST'): return #
 
-    response: StandardResponseManager = StandardResponseManager()
+    response: StandardResponseManager = StandardResponseManager(message = "Falied to create appointment")
     patient: Patient = None
 
     try:
@@ -166,7 +167,7 @@ def create_appointment(request):
         request.data['patient'] = patient.id
         serializer = PatientScheduleSerializer(data=request.data)
 
-        if(serializer.is_valid()):
+        if(serializer.is_valid(patient=patient)):
             serializer.save()
 
             response.statusCode = status.HTTP_201_CREATED
@@ -175,15 +176,12 @@ def create_appointment(request):
         else:
             response.statusCode = status.HTTP_400_BAD_REQUEST
             response.errors = serializer.errors
-            response.message = "Failed to create appointment"
 
     except Patient.DoesNotExist:
-        response.errors = "Patient with this email does not exist"
-        response.message = response.errors
+        response.errors = "Patient does not exist"
 
     except Exception as e:
         response.errors = str(e)
-        response.message = response.errors
     
 
     return Response(response.get_response(), status=response.statusCode)
