@@ -7,7 +7,9 @@ from rest_framework import status
 from api.custom_exception import CustomException
 
 class PatientEngagementSerializer(serializers.Serializer):
-    schedule_id = serializers.IntegerField()
+    
+    id = serializers.PrimaryKeyRelatedField(read_only=True)
+    schedule_id = serializers.PrimaryKeyRelatedField(queryset=PatientSchedule.objects.all())
     temperature = serializers.FloatField()
     pulse = serializers.CharField(max_length=10)
     upper_blood_pressure = serializers.FloatField()
@@ -20,7 +22,7 @@ class PatientEngagementSerializer(serializers.Serializer):
 
     
     def create(self, validated_data):
-        schedule: PatientSchedule
+        schedule: PatientSchedule = None
 
         try:
             schedule = PatientSchedule.objects.get(id=validated_data.get('schedule_id'))

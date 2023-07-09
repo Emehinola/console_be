@@ -1,7 +1,11 @@
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework_simplejwt.tokens import AccessToken
+from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
+
+from rest_framework_simplejwt.models import TokenUser
+
+from django.contrib.auth.hashers import make_password
 
 from django.urls import reverse
 
@@ -12,11 +16,19 @@ from . import serializers as acctSerializer
 from ..models import ConsoleUser
 
 
+
+# from users import serializers
+# class CustomTokenObtainPairView(TokenObtainPairView):
+#     # Replace the serializer with your custom
+#     serializer_class = serializers.CustomTokenObtainPairSerializer
+
+
 @api_view(['POST']) # post request
 def create_account(request):
     if(request.method != 'POST'): return
 
     response_data: dict = {}
+    request.data['password'] = make_password(request.data["password"]) # hash password
 
     serializer = acctSerializer.UserSerializer(data=request.data)
 
@@ -34,6 +46,7 @@ def create_account(request):
         response_data = serializer.errors
 
     return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
+
 
 @api_view(['POST'])
 def login_request(request):
@@ -55,16 +68,62 @@ def login_request(request):
     if(response.status_code == 200):
         data['message'] = 'Login successful!'
         data['accessToken'] = response.json()['access']
-        data['refreshTken'] = response.json()['refresh']
+        data['refreshToken'] = response.json()['refresh']
     else:
         data['message'] = 'Incorrect username or password'
 
     return Response(data=data, status=response.status_code)
 
 
+@api_view(['POST'])
+def new_login(request):
+    
+    data: dict = {}
+
+    try:
+        user = ConsoleUser.objects.get(email=request.POST.get('email'))
+    except ConsoleUser.DoesNotExist:
+        data['status_code'] = status.HTTP_401_UNAUTHORIZED
+        data['message'] = 'Incorrect username or password'
+
+        return Response(data=data, status=data['status_code'])
+            
+    if(user.check_password(request.POST.get('password'))):
+        token = get_token(user) 
+        
+        if(token != None):
+            data['status_code'] = status.HTTP_200_OK
+            data['message'] = 'Login successful!'
+            data['access_token'] = token['access_token']
+            data['refresh_token'] = token['refresh_token']
+        
+    else:
+        data['status_code'] = status.HTTP_401_UNAUTHORIZED
+        data['message'] = 'Incorrect username or password'
+
+    return Response(data=data, status=data['status_code'])
+
+
+# get token
+def get_token(user: ConsoleUser):
+    try:
+        refresh = RefreshToken.for_user(user)
+
+        return {
+            'access_token': str(refresh.access_token),
+            'refresh_token': str(refresh)
+        }
+
+    except:
+        return None
+    
+
+
 @api_view(['GET'])
 def get_user(request):
     token_str = request.META.get('HTTP_AUTHORIZATION', None)
+
+    if(token_str == None): return Response(data={'error': 'Token is required'})
 
     if(request.method != 'GET'): return #
     user_id = None
@@ -74,7 +133,7 @@ def get_user(request):
         token = AccessToken(token_str)
     except:
         return Response(data={'error': 'Token is invalid or expired!'})
-        
+    
     user_id = token['user_id']
     
     try:
@@ -112,3 +171,31 @@ def update_user(request):
 
 
     return Response(data=response_obj)
+
+
+
+class UserCustomView:
+
+    @api_view(['POST'])
+    def create_account(request):
+        pass
+
+    @api_view(['POST'])
+    def login(request):
+        pass
+
+    @api_view(['POST'])
+    def logout(request):
+        pass
+
+    @api_view(['GET'])
+    def get_user(request, pk=None):
+        pass
+
+    @api_view(['POST'])
+    def validate_email(request):
+        pass
+
+    @api_view(['POST'])
+    def forgot_password(request):
+        pass

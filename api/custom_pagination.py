@@ -6,7 +6,7 @@ from collections import OrderedDict
 
 class CustomPagination(PageNumberPagination):
 
-    page_size = 2
+    page_size = 5 # per page
     page_query_param = 'page_number'
     page_size_query_param = 'per_page'
 

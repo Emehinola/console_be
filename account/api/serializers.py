@@ -3,13 +3,28 @@ from ..models import ConsoleUser
 from django.db.models import Q
 
 
+# from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+
+# class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+#     """Customizes JWT default Serializer to add more information about user"""
+#     @classmethod
+#     def get_token(cls, user):
+#         token = super().get_token(user)
+#         token['name'] = user.name
+#         token['email'] = user.email
+#         token['is_superuser'] = user.is_superuser
+#         token['is_staff'] = user.is_staff
+
+#         return token
+
+
 class UserSerializer(serializers.ModelSerializer):
     full_name = serializers.SerializerMethodField()
     # email = serializers.EmailField(read_only=True)
 
     class Meta:
         model = ConsoleUser
-        exclude = ['password', 'is_staff', 'is_active', 'is_superuser']
+        exclude = ['is_staff', 'is_active', 'is_superuser']
         # fields = '__all__' # include all fields
     
 
@@ -19,6 +34,10 @@ class UserSerializer(serializers.ModelSerializer):
 
         if (queryset.exists()): # id != None for update
             raise serializers.ValidationError('Email/username already taken')
+
+        if (len(data['password']) < 8): raise serializers.ValidationError('Password must be atleast 8 character long')
+        
+        return data
         
         
     def get_full_name(self, userObj):

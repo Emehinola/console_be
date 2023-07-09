@@ -1,4 +1,5 @@
 from rest_framework import status
+from rest_framework.response import Response
 
 class StandardResponseManager:
 
@@ -18,7 +19,12 @@ class StandardResponseManager:
     def get_response(self):
         return {
             'statusCode': self.statusCode,
+            'errors': self.errors,
             'message': self.message,
-            'data': self.data,
-            'errors': self.errors
+            'data': self.data
         } # returns response
+    
+    
+    @classmethod
+    def not_found(self, message="Not found"):
+        return Response({"status_code": status.HTTP_404_NOT_FOUND, "error": message, "data": None}, status=status.HTTP_404_NOT_FOUND)

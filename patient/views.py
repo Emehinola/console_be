@@ -83,7 +83,7 @@ def get_patient_by_email(request):
         serializer = PatientSerializer(patient)
 
         response['statusCode'] = status.HTTP_200_OK
-        response['message'] = 'Patient found'
+        response['message'] = 'Patient fetched successfully'
         response['data'] = serializer.data
 
     except Patient.DoesNotExist:
@@ -240,7 +240,7 @@ def get_patient_appointment(request):
         response.statusCode = status.HTTP_404_NOT_FOUND
 
     except:
-        response.errors = "Unable to fetch schedule"
-        response.message = "Unable to fetch schedule"
+        response.errors = "Unable to get schedule"
+        response.message = "Unable to get schedule"
 
     return Response(response.get_response(), status=response.statusCode)

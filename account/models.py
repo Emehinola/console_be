@@ -1,10 +1,14 @@
 from django.db import models
 from django.db.models import Q
-from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
+from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
     
 class UserManager(BaseUserManager):
     
     def create_user(self, email, password, **kwargs):
+
+        print(" >>>>>> inside manager <<<<<<<")
+        print(email)
+        print(password)
 
         username = kwargs.get('username', None)
 
@@ -39,7 +43,8 @@ class UserManager(BaseUserManager):
         
         return self.create_user(email, password, **kwargs)
     
-class ConsoleUser(AbstractBaseUser):
+    
+class ConsoleUser(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(unique=True)
     username = models.CharField(max_length=50, unique=True)
     first_name = models.CharField(max_length=50)

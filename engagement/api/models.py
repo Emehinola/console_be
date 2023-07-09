@@ -3,6 +3,7 @@ from patient.models import PatientSchedule
 
 # Create your models here.
 class PatientEngagement(models.Model):
+    
     schedule = models.ForeignKey(PatientSchedule, on_delete=models.CASCADE)
     temperature = models.FloatField(max_length=10)
     pulse = models.CharField(max_length=10)
